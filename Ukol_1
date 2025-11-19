@@ -1,0 +1,104 @@
+import math
+
+from enum import Enum
+
+from abc import ABC, abstractmethod
+
+class Locality:
+    def __init__(self, name, locality_coefficient):
+        self.name = name
+        self.locality_coefficient = locality_coefficient
+
+class Property(ABC):
+    def __init__(self, locality: Locality):
+        self.locality = locality
+    @abstractmethod
+    def calculate_tax():
+        pass
+
+class EstateType(Enum):
+    LAND = 1
+    BUILDING_SITE = 2
+    FORREST = 3
+    GARDEN = 4
+
+class Estate(Property):
+    def __init__(self, locality, estate_type: EstateType, area):
+        super().__init__(locality)
+        self.estate_type = estate_type
+        self.area = area
+    def calculate_tax(self):
+        if self.estate_type == "1":
+            return math.ceil(self.area * 0.85 * self.locality.locality_coefficient)
+        elif self.estate_type == "2":
+            return math.ceil(self.area * 9 * self.locality.locality_coefficient)
+        elif self.estate_type == "3":
+            return math.ceil(self.area * 0.35 * self.locality.locality_coefficient)
+        elif self.estate_type == "4":
+            return math.ceil(self.area * 2 * self.locality.locality_coefficient)
+        else:
+            return "Byl zadán neexistující typ pozemku, dovolené hodnoty: LAND = 1; BUILDING_SITE = 2; FORREST = 3; GARDEN = 4"
+    def __str__(self):
+        return f"{self.estate_type}, {self.locality.name} ({self.locality.locality_coefficient}), {self.area} m^2, daň: {self.calculate_tax()} Kč." 
+    
+class Residence(Property):
+    def __init__(self, locality, area, commercial=False):
+        super().__init__(locality)
+        self.area = area
+        self.commercial = commercial
+    def calculate_tax(self):
+        if self.commercial == True:
+            return math.ceil(self.area * self.locality.locality_coefficient * 30)
+        else:
+            return math.ceil(self.area * self.locality.locality_coefficient * 15)
+    def __str__(self):
+        if self.commercial == True:
+            return f"Komerční nemovitost: {self.locality.name} ({self.locality.locality_coefficient}), {self.area} m^2, daň: {self.calculate_tax()} Kč."
+        else:
+            return f"Nekomerční nemovitost: {self.locality.name} ({self.locality.locality_coefficient}), {self.area} m^2, daň: {self.calculate_tax()} Kč."
+
+class TaxReport:
+    def __init__(self, name, property_list: list):
+        self.name = name
+        self.property_list = property_list
+    def add_property(self, new_property):
+        self.property_list.append(new_property)
+        return self.property_list
+    def calculate_tax(self):
+        tax = 0
+        try:
+            for polozka in self.property_list:
+                tax = tax + polozka.calculate_tax()
+            return tax
+        except:
+            return "Byl zadán neexistující typ pozemku, dovolené hodnoty: LAND = 1; BUILDING_SITE = 2; FORREST = 3; GARDEN = 4"
+
+manetin = Locality("Manětín", 0.8)
+brno = Locality("Brno", 3)
+
+zem_poz = Estate(manetin, "1", 900)
+dum = Residence(manetin, 120)
+kancelar = Residence(brno, 90, True)
+
+print(zem_poz.calculate_tax())
+print(dum.calculate_tax())
+print(kancelar.calculate_tax())
+
+print(zem_poz)
+print(kancelar)
+print(dum)
+
+priznani = TaxReport("Markéta", [zem_poz, dum])
+print(priznani.calculate_tax())
+priznani.add_property(kancelar)
+print(priznani.calculate_tax())
+
+#dotaz: řádek 42
+#při výpisu infa o nemovitosti dostávám zpět hodnotu 1 pro zemědělský pozemek a ne název LAND
+#return f"{self.estate_type.name},..."
+#moje řešení bylo mu vnutit name a ne value (řádek 98)
+#jenže to nefunguje, myslím, že jsem o "patro níž" a dávám příkaz někde, kde už tyto možnosti nejsou
+#return f"{self.estate_type.EstateType.name},..." 
+#jenže řádek 101 je taky blbost, tak nevím, co s tím (krom podmínky pro hodnoty 4 typů pozemků a 4 verzí výpisu)
+
+#na řádek 76 - hodnotu v uvozovkách u typu pozemku - jsem přišla stylem pokus omyl, funguje to tak, ale je to podtržené, nevím, jak jinak to zapsat
