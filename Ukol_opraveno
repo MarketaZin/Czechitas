@@ -1,0 +1,86 @@
+import math
+
+from enum import Enum
+
+from abc import ABC, abstractmethod
+
+class Locality:
+    def __init__(self, name, locality_coefficient):
+        self.name = name
+        self.locality_coefficient = locality_coefficient
+
+class Property(ABC):
+    def __init__(self, locality: Locality):
+        self.locality = locality
+    @abstractmethod
+    def calculate_tax(self):
+        pass
+    @abstractmethod
+    def __str__(self):
+        pass
+
+class EstateType(Enum):
+    LAND = 0.85
+    BUILDING_SITE = 9
+    FORREST = 0.35
+    GARDEN = 2
+
+class Estate(Property):
+    def __init__(self, locality, estate_type: EstateType, area):
+        super().__init__(locality)
+        if not isinstance(estate_type, EstateType):
+            raise ValueError
+        self.estate_type = estate_type
+        self.area = area
+    def calculate_tax(self):
+            return math.ceil(self.area * self.estate_type.value * self.locality.locality_coefficient)
+    def __str__(self):
+        return f"{self.estate_type.name}, {self.locality.name} ({self.locality.locality_coefficient}), {self.area} m^2, daň: {self.calculate_tax()} Kč." 
+    
+class Residence(Property):
+    def __init__(self, locality, area, commercial=False):
+        super().__init__(locality)
+        self.area = area
+        self.commercial = commercial
+    def calculate_tax(self):
+        if self.commercial == True:
+            return math.ceil(self.area * self.locality.locality_coefficient * 30)
+        else:
+            return math.ceil(self.area * self.locality.locality_coefficient * 15)
+    def __str__(self):
+        if self.commercial == True:
+            return f"Komerční nemovitost: {self.locality.name} ({self.locality.locality_coefficient}), {self.area} m^2, daň: {self.calculate_tax()} Kč."
+        else:
+            return f"Nekomerční nemovitost: {self.locality.name} ({self.locality.locality_coefficient}), {self.area} m^2, daň: {self.calculate_tax()} Kč."
+
+class TaxReport:
+    def __init__(self, name, property_list: list):
+        self.name = name
+        self.property_list = property_list
+    def add_property(self, new_property):
+        self.property_list.append(new_property)
+    def calculate_tax(self):
+        tax = 0
+        for polozka in self.property_list:
+            tax = tax + polozka.calculate_tax()
+        return tax
+
+manetin = Locality("Manětín", 0.8)
+brno = Locality("Brno", 3)
+
+zem_poz = Estate(manetin, EstateType.LAND, 900)
+dum = Residence(manetin, 120)
+kancelar = Residence(brno, 90, True)
+
+print(zem_poz.calculate_tax())
+print(dum.calculate_tax())
+print(kancelar.calculate_tax())
+
+print(zem_poz)
+print(kancelar)
+print(dum)
+
+priznani = TaxReport("Markéta", [zem_poz, dum])
+print(priznani.calculate_tax())
+priznani.add_property(kancelar)
+print(priznani.calculate_tax())
